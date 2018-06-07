@@ -25,4 +25,4 @@ deploy:
   artifact: dist\*
   set_public: true
   on:
-    branch: master
+    branch: more-appveyor
