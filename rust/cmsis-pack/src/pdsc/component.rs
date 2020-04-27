@@ -1,13 +1,15 @@
-use std::str::FromStr;
 use std::path::PathBuf;
+use std::str::FromStr;
 
-use minidom::{Element, Error, ErrorKind};
+use minidom::Element;
 use serde::Serialize;
+
+use failure::{format_err, Error};
 
 use crate::utils::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
-pub enum FileCategory{
+pub enum FileCategory {
     Doc,
     Header,
     Include,
@@ -40,13 +42,13 @@ impl FromStr for FileCategory {
             "utility" => Ok(FileCategory::Utility),
             "image" => Ok(FileCategory::Image),
             "other" => Ok(FileCategory::Other),
-            unknown => Err(err_msg!("Unknown file catogory {}", unknown)),
+            unknown => Err(format_err!("Unknown file catogory {}", unknown)),
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
-pub enum FileAttribute{
+pub enum FileAttribute {
     Config,
     Template,
 }
@@ -57,11 +59,10 @@ impl FromStr for FileAttribute {
         match from {
             "config" => Ok(FileAttribute::Config),
             "template" => Ok(FileAttribute::Template),
-            unknown => Err(err_msg!("Unknown file attribute {}", unknown)),
+            unknown => Err(format_err!("Unknown file attribute {}", unknown)),
         }
     }
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FileRef {
@@ -172,13 +173,11 @@ impl Bundle {
         }
         self.components
             .into_iter()
-            .map(|comp| {
-                ComponentBuilder {
-                    class: comp.class.or_else(|| Some(class.clone())),
-                    version: comp.version.or_else(|| Some(version.clone())),
-                    vendor: comp.vendor.or_else(|| vendor.clone()),
-                    ..comp
-                }
+            .map(|comp| ComponentBuilder {
+                class: comp.class.or_else(|| Some(class.clone())),
+                version: comp.version.or_else(|| Some(version.clone())),
+                vendor: comp.vendor.or_else(|| vendor.clone()),
+                ..comp
             })
             .collect()
     }
@@ -193,11 +192,14 @@ impl FromElem for Bundle {
         // let l = l.new(o!("Bundle" => name.clone(),
         //                  "Class" => class.clone(),
         //                  "Version" => version.clone()));
-        let components = e.children()
-            .filter_map(move |chld| if chld.name() == "component" {
-                ComponentBuilder::from_elem(chld).ok()
-            } else {
-                None
+        let components = e
+            .children()
+            .filter_map(move |chld| {
+                if chld.name() == "component" {
+                    ComponentBuilder::from_elem(chld).ok()
+                } else {
+                    None
+                }
             })
             .collect();
         Ok(Self {
@@ -224,10 +226,10 @@ fn child_to_component_iter(
             let component = ComponentBuilder::from_elem(e)?;
             Ok(Box::new(Some(component).into_iter()))
         }
-        _ => Err(Error::from_kind(ErrorKind::Msg(format!(
+        _ => Err(format_err!(
             "element of name {} is not allowed as a descendant of components",
             e.name()
-        )))),
+        )),
     }
 }
 
