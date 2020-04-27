@@ -1,4 +1,5 @@
-use minidom::{Element, Error};
+use failure::Error;
+use minidom::Element;
 
 use crate::utils::prelude::*;
 
