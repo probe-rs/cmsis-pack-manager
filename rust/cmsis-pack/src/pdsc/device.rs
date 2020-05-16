@@ -510,12 +510,27 @@ impl<'dom> DeviceBuilder<'dom> {
     }
 }
 
+fn parse_variant<'dom>(e: &'dom Element) -> DeviceBuilder<'dom> {
+    let mut variant_device = DeviceBuilder::from_elem(e);
+    for child in e.children() {
+        match child.name() {
+            "memory" => {
+                FromElem::from_elem(child)
+                    .ok_warn()
+                    .map(|mem| variant_device.add_memory(mem));
+            }
+            _ => (),
+        }
+    }
+    variant_device
+}
+
 fn parse_device<'dom>(e: &'dom Element) -> Vec<DeviceBuilder<'dom>> {
     let mut device = DeviceBuilder::from_elem(e);
     let variants = e
         .children()
         .filter_map(|child| match child.name() {
-            "variant" => Some(DeviceBuilder::from_elem(child)),
+            "variant" => Some(parse_variant(child)),
             "memory" => {
                 FromElem::from_elem(child)
                     .ok_warn()
